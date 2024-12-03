@@ -6,7 +6,7 @@ class ApiConsumer
     private function api($endpoint, $method = 'GET', $post_field = [])
     {
         $curl = curl_init();
-        $url = "https://restcountries.com/v2/all";
+        $url = "https://restcountries.com/v2/" . $endpoint; // Usar o endpoint correto
 
         curl_setopt_array($curl, [
             CURLOPT_URL => $url,
@@ -15,8 +15,8 @@ class ApiConsumer
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 120,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_TIMEOUT => 180,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2_0,
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_HTTPHEADER => [
                 "Accept: */*"
@@ -42,11 +42,10 @@ class ApiConsumer
         }
     }
 
-
-    // Método público para retornar todos os países
+    // Método público para retornar todos os países com bandeiras
     public function get_all_countries(): array|string
     {
-        $results = $this->api(endpoint: 'all');
+        $results = $this->api('all'); // Endpoint para obter todos os países
 
         // Verificar se a resposta é um erro
         if (is_string($results)) {
@@ -61,23 +60,30 @@ class ApiConsumer
         $countries = [];
         
         foreach ($results as $result) {
-            // Ajustar o acesso ao nome do país
-            if (isset($result['name'])) {
-                $countries[] = $result['name'];
-            } else {
-                $countries[] = "Nome não encontrado";
-            }
+            // Ajustar o acesso ao nome do país e à bandeira
+            $countries[] = [
+                'name' => $result['name'] ?? "Nome não encontrado",
+                'flag' => $result['flags']['png'] ?? null // URL da bandeira em formato PNG
+            ];
         }
 
         return $countries;
     }
 
+    // Método público para retornar informações de um país específico
     public function get_country($country_name)
     {
-        return $this->api($country_name); // Passa o nome do país como parâmetro
+        // Usar o endpoint apropriado para obter um país pelo nome
+        $results = $this->api("name/" . urlencode($country_name)); // Encode para garantir que o nome do país é seguro para URL
+
+        // Verificar se a resposta é um erro
+        if (is_string($results)) {
+            return $results;
+        }
+
+        // Retornar o primeiro resultado, pois a API pode retornar múltiplos resultados
+        return $results[0] ?? null; // Se não houver resultado, retorna null
     }
-
-
 }
 
 ?>
